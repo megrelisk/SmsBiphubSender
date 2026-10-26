@@ -73,6 +73,12 @@ async function handleSendResult(msg, r) {
          next_action_at=now() + make_interval(secs => $4), updated_at=now() WHERE id=$1`,
       [msg.id, r.messageId, r.deliveryStatus, config.pollIntervalSec],
     );
+    // ბალანსს ვაკლებთ მიღებული fragment-ების რაოდენობით (Beephub ხარჯავს fragment-ზე)
+    await query(
+      `UPDATE cabinets SET balance_gel = balance_gel - $2 * price_per_sms
+       WHERE id = (SELECT cabinet FROM campaigns WHERE id=$1)`,
+      [msg.campaign_id, msg.fragments],
+    );
   } else if (r.outcome === 'rejected') {
     await markFailure(msg, classifySendRejection(r), r.code, r.message);
   } else if (r.outcome === 'http') {

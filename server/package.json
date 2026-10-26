@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "node --watch --env-file=.env src/index.js",
     "start": "node --env-file=.env src/index.js",
+    "seed": "node --env-file=.env src/seed.js",
     "test": "node --test"
   },
   "dependencies": {

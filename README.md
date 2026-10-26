@@ -24,6 +24,28 @@ npm start                            # http://localhost:3001
 `BEEPHUB_MOCK=1` რეჟიმში SMS რეალურად არ იგზავნება. ნომრის ბოლო ციფრი განსაზღვრავს სცენარს:
 `0` — დროებითი მიწოდების შეცდომა, `9` — მუდმივი, `8` — არასწორი ნომერი, `7` — პირველად HTTP 500, დანარჩენი — წარმატება.
 
+## კაბინეტები, ბალანსი, შაბლონები
+
+- მარჯვენა ზედა გადამრთველით ირჩევ კაბინეტს (**KEA Academy** / **Mind up**). გაგზავნის სახელი (Sender ID) მოდის
+  არჩეული კაბინეტიდან და ყველგან ჩანს (ფერადი ზოლი და გაგზავნის ღილაკი). Sender ID-ები ბაზის ცხრილშია (`cabinets`).
+- შაბლონები კაბინეტზეა მიბმული. სატესტო შაბლონების ჩასაწერად: `npm.cmd run seed -w server`.
+- Beephub-ის API ბალანსს არ აბრუნებს, ამიტომ ბალანსი და ფასი 1 SMS-ზე ხელით შეგყავს („ბალანსის შეცვლა“), გაგზავნილი
+  მესიჯების ღირებულება კი (fragment-ები × ფასი) ავტომატურად აკლდება. fragment: GSM-7 160/153, ქართული (UCS-2) 70/67.
+
+## MCP (გაგზავნა Claude-ის ჩატიდან)
+
+[mcp/index.js](mcp/index.js) აძლევს Claude-ს ხელსაწყოებს: `list_cabinets`, `list_templates`, `send_sms`, `get_status`.
+`send_sms` ჯერ გადახედვას აბრუნებს (`confirm=false`), რეალურად კი მხოლოდ `confirm=true`-ზე აგზავნის.
+MCP-ს მუშაობისთვის აპლიკაცია (`npm.cmd start`) ჩართული უნდა იყოს.
+
+Claude Desktop-ისთვის დაამატე `claude_desktop_config.json`-ში (და გადატვირთე Claude):
+
+```json
+{ "mcpServers": { "sms-biphub": { "command": "node", "args": ["C:\\Users\\User\\SmsBiphubSender\\mcp\\index.js"] } } }
+```
+
+Claude Code-ისთვის: `claude mcp add sms-biphub -- node C:\Users\User\SmsBiphubSender\mcp\index.js`
+
 ## დუბლირებისგან დაცვა
 
 - ყოველ მესიჯს აქვს უნიკალური UUID, რომელიც იგზავნება როგორც `clientMessageId`.

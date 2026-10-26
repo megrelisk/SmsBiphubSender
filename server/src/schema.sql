@@ -50,3 +50,25 @@ CREATE TABLE IF NOT EXISTS messages (
 
 CREATE INDEX IF NOT EXISTS messages_due_idx ON messages (status, next_action_at);
 CREATE INDEX IF NOT EXISTS messages_campaign_idx ON messages (campaign_id);
+
+-- კაბინეტები: თითოეულს თავისი Sender ID, ბალანსი და ფასი
+CREATE TABLE IF NOT EXISTS cabinets (
+  id            TEXT PRIMARY KEY,
+  name          TEXT NOT NULL,
+  sender        TEXT NOT NULL,
+  balance_gel   NUMERIC(12,4) NOT NULL DEFAULT 0,
+  price_per_sms NUMERIC(8,4)  NOT NULL DEFAULT 0,   -- ლარი ერთ fragment-ზე
+  sort_order    INT NOT NULL DEFAULT 0
+);
+
+INSERT INTO cabinets (id, name, sender, sort_order) VALUES
+  ('kea',    'KEA Academy', 'KEA Academy', 1),
+  ('mindup', 'Mind up',     'Mind up',     2)
+ON CONFLICT (id) DO NOTHING;
+
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
+ALTER TABLE templates DROP CONSTRAINT IF EXISTS templates_name_key;
+CREATE UNIQUE INDEX IF NOT EXISTS templates_cabinet_name_idx ON templates (cabinet, name);
+
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
+ALTER TABLE messages  ADD COLUMN IF NOT EXISTS fragments INT NOT NULL DEFAULT 1;

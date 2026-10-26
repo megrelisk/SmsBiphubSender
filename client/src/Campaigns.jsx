@@ -62,9 +62,9 @@ const Counts = ({ c }) => (
   </div>
 );
 
-export default function Campaigns({ openId, setOpenId }) {
+export default function Campaigns({ cabinet, openId, setOpenId }) {
   const [list, setList] = useState([]);
-  usePolling(() => { if (!openId) api.campaigns().then(setList).catch(() => {}); }, 5000);
+  usePolling(() => { if (!openId) api.campaigns(cabinet.id).then(setList).catch(() => {}); }, 5000);
 
   if (openId) return <Detail id={openId} onBack={() => setOpenId(null)} />;
   if (!list.length) return <p className="muted">გაგზავნები ჯერ არ არის</p>;

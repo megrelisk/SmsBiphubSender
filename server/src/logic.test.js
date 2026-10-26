@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { normalizePhone } from './phone.js';
 import { render } from './template.js';
+import { smsInfo } from './gsm.js';
 import { classifySendRejection, classifyHttpError, classifyDeliveryFailure } from './errors.js';
 
 test('normalizePhone', () => {
@@ -15,6 +16,15 @@ test('normalizePhone', () => {
 test('render', () => {
   assert.deepEqual(render('გამარჯობა {{name}}!', { name: ' გიო ' }), { text: 'გამარჯობა გიო!' });
   assert.deepEqual(render('{{a}} {{b}}', { a: '1' }), { missing: ['b'] });
+});
+
+test('smsInfo fragments', () => {
+  assert.deepEqual(smsInfo('a'.repeat(160)), { encoding: 'GSM-7', length: 160, fragments: 1 });
+  assert.equal(smsInfo('a'.repeat(161)).fragments, 2);
+  assert.equal(smsInfo('{'.repeat(81)).fragments, 2); // გაფართოებული სიმბოლო = 2
+  assert.equal(smsInfo('ა'.repeat(70)).fragments, 1); // ქართული = UCS-2
+  assert.equal(smsInfo('ა'.repeat(71)).fragments, 2);
+  assert.equal(smsInfo('').fragments, 0);
 });
 
 test('error classification', () => {

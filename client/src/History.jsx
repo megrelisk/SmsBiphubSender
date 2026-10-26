@@ -5,20 +5,16 @@ import MessagesTable from './MessagesTable.jsx';
 
 const PAGE = 50;
 
-export default function History() {
+export default function History({ cabinet }) {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(0);
   const [data, setData] = useState({ total: 0, rows: [] });
 
-  usePolling(
-    () => api.messages({ q, status, limit: PAGE, offset: page * PAGE }).then(setData).catch(() => {}),
-    5000,
-  );
-  // ფილტრის შეცვლისას დაუყოვნებლივ გადატვირთვა
-  React.useEffect(() => {
-    api.messages({ q, status, limit: PAGE, offset: page * PAGE }).then(setData).catch(() => {});
-  }, [q, status, page]);
+  const load = () => api.messages({ q, status, cabinet: cabinet.id, limit: PAGE, offset: page * PAGE }).then(setData).catch(() => {});
+  usePolling(load, 5000);
+  // ფილტრის ან კაბინეტის შეცვლისას დაუყოვნებლივ გადატვირთვა
+  React.useEffect(() => { load(); }, [q, status, page, cabinet.id]);
 
   const pages = Math.max(1, Math.ceil(data.total / PAGE));
   return (

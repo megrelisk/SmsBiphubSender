@@ -43,3 +43,49 @@ tr.click { cursor:pointer; } tr.click:hover { background:var(--bg); }
 .pill.orange { background:#fde7c8; color:#92400e; } .pill.blue { background:#dbe7fd; color:#1e40af; }
 .counts { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13px; margin:6px 0; }
 .counts .g { color:#15803d; } .counts .r { color:#b91c1c; } .counts .o { color:#b45309; }
+
+/* ---- კაბინეტები ---- */
+.app[data-cabinet="kea"] { --accent:#2563eb; --accent-soft:#dbe7fd; }
+.app[data-cabinet="mindup"] { --accent:#c2410c; --accent-soft:#fde3d2; }
+header { justify-content:space-between; }
+header h1 { margin-right:auto; }
+.cabinet-switch { display:flex; border:2px solid var(--line); border-radius:99px; padding:3px; background:var(--card); }
+.cabinet-switch button { border:0; border-radius:99px; padding:8px 18px; font-weight:600; background:none; color:var(--muted); }
+.cabinet-switch button[data-cabinet="kea"].on { background:#2563eb; color:#fff; }
+.cabinet-switch button[data-cabinet="mindup"].on { background:#c2410c; color:#fff; }
+.sender-strip { background:var(--accent); color:#fff; padding:10px 16px; border-radius:8px; margin:8px 0; font-size:16px; }
+.sender-strip b { font-size:19px; letter-spacing:.3px; }
+button.send { width:100%; font-size:17px; padding:14px; }
+.neg { color:#b91c1c; }
+
+/* ---- ბალანსი ---- */
+.balance { display:flex; flex-wrap:wrap; gap:12px 28px; align-items:center; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:8px; }
+.stat { display:flex; flex-direction:column; }
+.stat span { font-size:12px; color:var(--muted); } .stat b { font-size:19px; }
+.balance-edit { display:flex; flex-wrap:wrap; gap:8px 12px; align-items:flex-end; width:100%; }
+.balance-edit label { min-width:140px; max-width:200px; margin:0; }
+.balance-edit .muted { width:100%; }
+
+/* ---- ხარჯი ---- */
+.cost { display:flex; flex-wrap:wrap; gap:6px 24px; padding:12px 14px; margin-top:16px; border-radius:8px; background:var(--accent-soft); color:#1f2430; }
+.cost.bad { background:#fde8e8; }
+
+/* ---- დროის ამრჩევი ---- */
+.dtp { border:1px solid var(--line); border-radius:10px; padding:12px; margin:8px 0; max-width:560px; background:var(--bg); }
+.dtp-date { display:flex; gap:6px; align-items:center; }
+.dtp-date input { width:auto; margin:0; flex:1; }
+.dtp-wheels { display:flex; gap:8px; align-items:center; margin:12px 0; }
+.wheel { position:relative; width:84px; height:180px; background:var(--card); border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.wheel-band { position:absolute; left:0; right:0; top:72px; height:36px; background:var(--accent-soft); opacity:.6; pointer-events:none; }
+.wheel-list { height:100%; overflow-y:scroll; scroll-snap-type:y mandatory; padding:72px 0; scrollbar-width:none; position:relative; }
+.wheel-list::-webkit-scrollbar { display:none; }
+.wheel-item { height:36px; line-height:36px; text-align:center; scroll-snap-align:center; font-size:20px; color:var(--muted); cursor:pointer; user-select:none; }
+.wheel-item.sel { color:var(--text); font-weight:700; font-size:24px; }
+.colon { font-size:28px; font-weight:700; }
+.dtp-side { flex:1; display:flex; flex-direction:column; gap:10px; margin-left:8px; }
+.minute-grid { display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; }
+.minute-grid button, .quick button { padding:6px 4px; font-size:13px; }
+.minute-grid button.on { background:var(--accent); color:#fff; border-color:var(--accent); }
+.quick { display:flex; flex-wrap:wrap; gap:6px; }
+.dtp-summary { font-weight:600; }
+.dtp-summary.past { color:#b45309; }

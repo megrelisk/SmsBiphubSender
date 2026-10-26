@@ -25,15 +25,6 @@ export const StatusBadge = ({ status }) => {
 
 export const fmt = (d) => (d ? new Date(d).toLocaleString('ka-GE', { hour12: false }) : '');
 
-// სეგმენტების შეფასება: ქართული UCS-2 არის (70 სიმბოლო, ან 67 თუ გრძელია)
-export function segments(text) {
-  const ucs2 = /[^\x00-\x7F]/.test(text);
-  const single = ucs2 ? 70 : 160;
-  const multi = ucs2 ? 67 : 153;
-  const n = text.length <= single ? (text.length ? 1 : 0) : Math.ceil(text.length / multi);
-  return { n, ucs2 };
-}
-
 export function usePolling(fn, ms) {
   const ref = useRef(fn);
   ref.current = fn;
