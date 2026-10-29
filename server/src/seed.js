@@ -14,7 +14,7 @@ const TEMPLATES = [
 await migrate();
 for (const [cabinet, name, body] of TEMPLATES) {
   await query(
-    'INSERT INTO templates (cabinet, name, body) VALUES ($1,$2,$3) ON CONFLICT (cabinet, name) DO NOTHING',
+    'INSERT INTO templates (cabinet, name, body) VALUES ($1,$2,$3) ON CONFLICT (cabinet, folder, name) DO NOTHING',
     [cabinet, name, body],
   );
 }

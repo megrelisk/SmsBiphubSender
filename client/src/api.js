@@ -21,12 +21,21 @@ export const api = {
   templates: (cabinet) => request('/templates?' + qs({ cabinet })),
   saveTemplate: (t) => (t.id ? request(`/templates/${t.id}`, json('PUT', t)) : request('/templates', json('POST', t))),
   deleteTemplate: (id) => request(`/templates/${id}`, { method: 'DELETE' }),
+  moveTemplate: (id, folder) => request(`/templates/${id}/folder`, json('PATCH', { folder })),
+  templateFolders: (cabinet) => request('/template-folders?' + qs({ cabinet })),
+  addTemplateFolder: (cabinet, name) => request('/template-folders', json('POST', { cabinet, name })),
+  deleteTemplateFolder: (cabinet, name) => request('/template-folders?' + qs({ cabinet, name }), { method: 'DELETE' }),
   parseFile: (file) => {
     const fd = new FormData();
     fd.append('file', file);
     return request('/parse', { method: 'POST', body: fd });
   },
+  previewCampaign: (c) => request('/campaigns/preview', json('POST', c)),
   createCampaign: (c) => request('/campaigns', json('POST', c)),
+  stats: (cabinet) => request('/stats?' + qs({ cabinet })),
+  blocked: () => request('/blocked'),
+  addBlocked: (phones, note) => request('/blocked', json('POST', { phones, note })),
+  removeBlocked: (phone) => request(`/blocked/${phone}`, { method: 'DELETE' }),
   campaigns: (cabinet) => request('/campaigns?' + qs({ cabinet })),
   campaign: (id) => request(`/campaigns/${id}`),
   cancelCampaign: (id) => request(`/campaigns/${id}/cancel`, { method: 'POST' }),

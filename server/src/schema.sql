@@ -66,9 +66,32 @@ INSERT INTO cabinets (id, name, sender, sort_order) VALUES
   ('mindup', 'Mind up',     'Mind up',     2)
 ON CONFLICT (id) DO NOTHING;
 
+-- ჩვენებადი სახელები (Sender ID არ იცვლება)
+INSERT INTO cabinets (id, name, sender, sort_order) VALUES
+  ('kea',      'Kea academy', 'KEA Academy', 1),
+  ('mindup',   'Mind up',     'Mind up',     2),
+  ('trainers', 'Trainers',    'Trainers',    3)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+
 ALTER TABLE templates ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
 ALTER TABLE templates DROP CONSTRAINT IF EXISTS templates_name_key;
-CREATE UNIQUE INDEX IF NOT EXISTS templates_cabinet_name_idx ON templates (cabinet, name);
+ALTER TABLE templates ADD COLUMN IF NOT EXISTS folder TEXT NOT NULL DEFAULT '';
+DROP INDEX IF EXISTS templates_cabinet_name_idx;
+CREATE UNIQUE INDEX IF NOT EXISTS templates_cabinet_folder_name_idx ON templates (cabinet, folder, name);
 
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
 ALTER TABLE messages  ADD COLUMN IF NOT EXISTS fragments INT NOT NULL DEFAULT 1;
+
+-- შავი სია: ამ ნომრებზე არასდროს იგზავნება (ყველა კაბინეტისთვის)
+CREATE TABLE IF NOT EXISTS blocked_numbers (
+  phone      TEXT PRIMARY KEY,
+  note       TEXT NOT NULL DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- შაბლონების საქაღალდეები (ცარიელიც რომ შეიქმნას); შაბლონი საქაღალდეს templates.folder-ით უკავშირდება
+CREATE TABLE IF NOT EXISTS template_folders (
+  cabinet TEXT NOT NULL,
+  name    TEXT NOT NULL,
+  PRIMARY KEY (cabinet, name)
+);

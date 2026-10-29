@@ -3,6 +3,7 @@ import { api } from './api.js';
 import { smsInfo, MAX_FRAGMENTS } from './gsm.js';
 import DateTimePicker, { nowRounded } from './DateTimePicker.jsx';
 import { gel } from './BalanceBar.jsx';
+import PhonePreview from './PhonePreview.jsx';
 
 const VAR = /\{\{\s*([^{}\s]+)\s*\}\}/g;
 const PHONE_GUESS = /phone|tel|mobile|number|ნომ|ტელ/i;
@@ -22,6 +23,7 @@ export default function NewSend({ cabinet, body, setBody, numbers, setNumbers, o
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState(null);
+  const [preview, setPreview] = useState(null);
 
   // კაბინეტის შეცვლისას ტექსტი გასუფთავდეს, რომ სხვა კაბინეტის ტექსტი არ გაიგზავნოს
   useEffect(() => {
@@ -66,24 +68,51 @@ export default function NewSend({ cabinet, body, setBody, numbers, setNumbers, o
     }
   }
 
+  const payload = () => ({
+    cabinet: cabinet.id,
+    name,
+    body,
+    scheduledAt: when === 'later' ? scheduledAt.toISOString() : null,
+    recipients,
+  });
+
+  // ნაბიჯი 1: სერვერი ამოწმებს მონაცემებს (არაფერი იგზავნება) და ვაჩვენებთ ტელეფონის გადახედვას
   async function submit() {
     setError('');
     setResult(null);
-    const what = when === 'later' ? `დაიგეგმოს ${scheduledAt.toLocaleString('ka-GE', { hour12: false })}-ზე` : 'გაიგზავნოს ახლავე';
-    if (!window.confirm(`${recipients.length} მიმღები, გამგზავნი: ${cabinet.sender}\n${what}?`)) return;
     setBusy(true);
     try {
-      const out = await api.createCampaign({
-        cabinet: cabinet.id,
-        name,
-        body,
-        scheduledAt: when === 'later' ? scheduledAt.toISOString() : null,
-        recipients,
+      const p = await api.previewCampaign(payload());
+      const at = when === 'later' ? scheduledAt : new Date();
+      setPreview({
+        name: cabinet.name,
+        sender: p.sender,
+        text: p.sample,
+        time: at.toLocaleTimeString('ka-GE', { hour: '2-digit', minute: '2-digit', hour12: false }),
+        later: when === 'later',
+        whenLabel: at.toLocaleString('ka-GE', { dateStyle: 'medium', timeStyle: 'short', hour12: false }),
+        estimate: p.estimate,
+        skipped: p.skipped,
       });
+    } catch (err) {
+      setError(err.message);
+      if (err.data?.skipped) setResult({ created: 0, skipped: err.data.skipped });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ნაბიჯი 2: მხოლოდ დადასტურების შემდეგ იქმნება გაგზავნა
+  async function confirmSend() {
+    setBusy(true);
+    try {
+      const out = await api.createCampaign(payload());
+      setPreview(null);
       setResult(out);
       onSent();
       if (!out.skipped.length) onCreated(out.campaign.id);
     } catch (err) {
+      setPreview(null);
       setError(err.message);
       if (err.data?.skipped) setResult({ created: 0, skipped: err.data.skipped });
     } finally {
@@ -132,10 +161,6 @@ export default function NewSend({ cabinet, body, setBody, numbers, setNumbers, o
         <div className="textcol">
           <div className="fhead">
             <label className="lbl" htmlFor="msg" style={{ margin: 0 }}>ტექსტი</label>
-            <span className="muted">
-              <b>{info.length}</b> სიმბოლო · <b>{info.fragments}</b> SMS ({info.encoding === 'UCS-2' ? 'უნიკოდი, 70 / 67' : 'GSM-7, 160 / 153'})
-              {info.fragments > MAX_FRAGMENTS && <b className="neg"> · მაქს. {MAX_FRAGMENTS}</b>}
-            </span>
           </div>
           {columns.length > 0 && (
             <div className="chips">
@@ -144,7 +169,12 @@ export default function NewSend({ cabinet, body, setBody, numbers, setNumbers, o
             </div>
           )}
           <textarea id="msg" value={body} onChange={(e) => setBody(e.target.value)} placeholder="დაწერე შეტყობინების ტექსტი..." />
-          {body && recipients[0] && source === 'file' && <div className="preview"><b>გადახედვა:</b> {renderPreview(body, recipients[0].vars)}</div>}
+          <div className="fhead">
+            <span className="muted">
+              <b>{info.length}</b> სიმბოლო · <b>{info.fragments}</b> SMS ({info.encoding === 'UCS-2' ? 'უნიკოდი, 70 / 67' : 'GSM-7, 160 / 153'})
+              {info.fragments > MAX_FRAGMENTS && <b className="neg"> · მაქს. {MAX_FRAGMENTS}</b>}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -202,9 +232,10 @@ export default function NewSend({ cabinet, body, setBody, numbers, setNumbers, o
         </div>
         <button className="primary send" disabled={!canSubmit} onClick={submit}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z" /><path d="M22 2 11 13" /></svg>
-          {busy ? 'იგზავნება...' : later ? 'დაგეგმვა' : 'გაგზავნა'}
+          {busy ? 'მოწმდება...' : later ? 'დაგეგმვა' : 'გაგზავნა'}
         </button>
       </div>
+      {preview && <PhonePreview {...preview} busy={busy} onConfirm={confirmSend} onBack={() => setPreview(null)} />}
     </section>
   );
 }

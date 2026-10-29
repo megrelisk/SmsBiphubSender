@@ -6,11 +6,12 @@ import History from './History.jsx';
 import Templates from './Templates.jsx';
 import Bases from './Bases.jsx';
 import BalanceBar from './BalanceBar.jsx';
+import SideCards from './SideCards.jsx';
 
 const TABS = [
   ['campaigns', 'გაგზავნები'],
   ['history', 'ისტორია'],
-  ['templates', 'ტექსტები'],
+  ['templates', 'შაბლონები'],
   ['bases', 'ბაზები'],
 ];
 
@@ -76,6 +77,7 @@ export default function App() {
             })}
           </div>
           {cabinet && <BalanceBar cabinet={cabinet} onSaved={refreshCabinets} />}
+          {cabinet && <SideCards cabinet={cabinet} onOpenCampaign={showCampaign} onRetry={appendNumbers} />}
         </aside>
 
         {cabinet ? (

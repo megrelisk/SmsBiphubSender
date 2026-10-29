@@ -42,21 +42,72 @@ api.put('/cabinets/:id', wrap(async (req, res) => {
   res.json(await getCabinet(req.params.id));
 }));
 
+// ---------- შავი სია ----------
+api.get('/blocked', wrap(async (_req, res) => {
+  res.json((await query('SELECT phone, note, created_at FROM blocked_numbers ORDER BY created_at DESC')).rows);
+}));
+
+api.post('/blocked', wrap(async (req, res) => {
+  const phones = (Array.isArray(req.body?.phones) ? req.body.phones : [req.body?.phone]).map(normalizePhone);
+  const valid = [...new Set(phones.filter(Boolean))];
+  if (!valid.length) return bad(res, 'ნომერი არასწორია');
+  const note = String(req.body?.note ?? '').trim();
+  await query(
+    'INSERT INTO blocked_numbers (phone, note) SELECT p, $2 FROM unnest($1::text[]) AS u(p) ON CONFLICT (phone) DO NOTHING',
+    [valid, note],
+  );
+  res.status(201).json({ added: valid.length, invalid: phones.length - phones.filter(Boolean).length });
+}));
+
+api.delete('/blocked/:phone', wrap(async (req, res) => {
+  await query('DELETE FROM blocked_numbers WHERE phone=$1', [req.params.phone]);
+  res.status(204).end();
+}));
+
+// ---------- დღევანდელი შედეგი და ბოლო შეცდომიანი ნომრები ----------
+api.get('/stats', wrap(async (req, res) => {
+  const cabinet = req.query.cabinet;
+  if (!cabinet) return bad(res, 'კაბინეტი არ არის მითითებული');
+  const today = (await query(
+    `SELECT count(*)::int AS total,
+            count(*) FILTER (WHERE m.status='DELIVERED')::int AS delivered,
+            count(*) FILTER (WHERE m.status IN ('FAILED_PERMANENT','FAILED_FINAL','NEEDS_REVIEW'))::int AS failed,
+            count(*) FILTER (WHERE m.status IN ('PENDING','SENDING','SUBMITTED'))::int AS waiting
+     FROM messages m JOIN campaigns c ON c.id=m.campaign_id
+     WHERE c.cabinet=$1 AND m.created_at >= date_trunc('day', now())`,
+    [cabinet],
+  )).rows[0];
+  const last = (await query(
+    `SELECT c.id, c.name FROM campaigns c
+     WHERE c.cabinet=$1 AND EXISTS (SELECT 1 FROM messages m WHERE m.campaign_id=c.id AND m.status IN ('FAILED_PERMANENT','FAILED_FINAL'))
+     ORDER BY c.created_at DESC LIMIT 1`,
+    [cabinet],
+  )).rows[0];
+  const numbers = last
+    ? (await query(
+      `SELECT to_number FROM messages WHERE campaign_id=$1 AND status IN ('FAILED_PERMANENT','FAILED_FINAL') ORDER BY created_at, id`,
+      [last.id],
+    )).rows.map((x) => x.to_number)
+    : [];
+  res.json({ today, lastFailed: last ? { campaign_id: last.id, name: last.name, numbers } : null });
+}));
+
 // ---------- შაბლონები ----------
 api.get('/templates', wrap(async (req, res) => {
   const { cabinet } = req.query;
   const { rows } = cabinet
-    ? await query('SELECT * FROM templates WHERE cabinet=$1 ORDER BY name', [cabinet])
-    : await query('SELECT * FROM templates ORDER BY cabinet, name');
+    ? await query('SELECT * FROM templates WHERE cabinet=$1 ORDER BY folder, name', [cabinet])
+    : await query('SELECT * FROM templates ORDER BY cabinet, folder, name');
   res.json(rows);
 }));
 
 api.post('/templates', wrap(async (req, res) => {
   const { name, body, cabinet } = req.body ?? {};
+  const folder = String(req.body?.folder ?? '').trim();
   if (!name?.trim() || !body?.trim()) return bad(res, 'სახელი და ტექსტი სავალდებულოა');
   if (!cabinet || !(await getCabinet(cabinet))) return bad(res, 'კაბინეტი არასწორია');
   try {
-    const { rows } = await query('INSERT INTO templates (name, body, cabinet) VALUES ($1,$2,$3) RETURNING *', [name.trim(), body, cabinet]);
+    const { rows } = await query('INSERT INTO templates (name, body, cabinet, folder) VALUES ($1,$2,$3,$4) RETURNING *', [name.trim(), body, cabinet, folder]);
     res.status(201).json(rows[0]);
   } catch (e) {
     if (e.code === '23505') return bad(res, 'ამ კაბინეტში ასეთი სახელის შაბლონი უკვე არსებობს');
@@ -66,9 +117,10 @@ api.post('/templates', wrap(async (req, res) => {
 
 api.put('/templates/:id', wrap(async (req, res) => {
   const { name, body } = req.body ?? {};
+  const folder = String(req.body?.folder ?? '').trim();
   if (!name?.trim() || !body?.trim()) return bad(res, 'სახელი და ტექსტი სავალდებულოა');
   try {
-    const { rows } = await query('UPDATE templates SET name=$2, body=$3 WHERE id=$1 RETURNING *', [req.params.id, name.trim(), body]);
+    const { rows } = await query('UPDATE templates SET name=$2, body=$3, folder=$4 WHERE id=$1 RETURNING *', [req.params.id, name.trim(), body, folder]);
     if (!rows[0]) return res.status(404).json({ error: 'ვერ მოიძებნა' });
     res.json(rows[0]);
   } catch (e) {
@@ -80,6 +132,53 @@ api.put('/templates/:id', wrap(async (req, res) => {
 api.delete('/templates/:id', wrap(async (req, res) => {
   await query('DELETE FROM templates WHERE id=$1', [req.params.id]);
   res.status(204).end();
+}));
+
+// შაბლონის გადატანა საქაღალდეში (გადათრევა); folder='' = საქაღალდის გარეშე
+api.patch('/templates/:id/folder', wrap(async (req, res) => {
+  const folder = String(req.body?.folder ?? '').trim();
+  try {
+    const { rows } = await query('UPDATE templates SET folder=$2 WHERE id=$1 RETURNING *', [req.params.id, folder]);
+    if (!rows[0]) return res.status(404).json({ error: 'ვერ მოიძებნა' });
+    res.json(rows[0]);
+  } catch (e) {
+    if (e.code === '23505') return bad(res, 'იმ საქაღალდეში ასეთი სახელის შაბლონი უკვე არსებობს');
+    throw e;
+  }
+}));
+
+// ---------- შაბლონების საქაღალდეები ----------
+api.get('/template-folders', wrap(async (req, res) => {
+  const { rows } = await query('SELECT name FROM template_folders WHERE cabinet=$1 ORDER BY name', [req.query.cabinet]);
+  res.json(rows.map((r) => r.name));
+}));
+
+api.post('/template-folders', wrap(async (req, res) => {
+  const { cabinet } = req.body ?? {};
+  const name = String(req.body?.name ?? '').trim();
+  if (!name || name.length > 60) return bad(res, 'საქაღალდის სახელი სავალდებულოა (მაქს. 60 სიმბოლო)');
+  if (!cabinet || !(await getCabinet(cabinet))) return bad(res, 'კაბინეტი არასწორია');
+  await query('INSERT INTO template_folders (cabinet, name) VALUES ($1,$2) ON CONFLICT DO NOTHING', [cabinet, name]);
+  res.status(201).json({ name });
+}));
+
+// წაშლისას შიგნით არსებული შაბლონები არ იშლება: გადადის „საქაღალდის გარეშე“-ში
+api.delete('/template-folders', wrap(async (req, res) => {
+  const { cabinet, name } = req.query;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(`UPDATE templates SET folder='' WHERE cabinet=$1 AND folder=$2`, [cabinet, name]);
+    await client.query('DELETE FROM template_folders WHERE cabinet=$1 AND name=$2', [cabinet, name]);
+    await client.query('COMMIT');
+    res.status(204).end();
+  } catch (e) {
+    await client.query('ROLLBACK');
+    if (e.code === '23505') return bad(res, 'შაბლონების გადატანა ვერ მოხერხდა: საქაღალდის გარეშე იგივე სახელის შაბლონი უკვე არსებობს');
+    throw e;
+  } finally {
+    client.release();
+  }
 }));
 
 // ---------- CSV/Excel წაკითხვა (გადახედვისთვის) ----------
@@ -116,6 +215,7 @@ async function prepare(input) {
     if (when < new Date()) when = new Date();
   }
 
+  const blocked = new Set((await query('SELECT phone FROM blocked_numbers')).rows.map((x) => x.phone));
   const seen = new Set();
   const numbers = [];
   const texts = [];
@@ -124,6 +224,7 @@ async function prepare(input) {
   for (const [i, r] of recipients.entries()) {
     const phone = normalizePhone(r.phone);
     if (!phone) { skipped.push({ row: i + 1, phone: r.phone, reason: 'ნომერი არასწორია' }); continue; }
+    if (blocked.has(phone)) { skipped.push({ row: i + 1, phone: r.phone, reason: 'ნომერი შავ სიაშია' }); continue; }
     if (seen.has(phone)) { skipped.push({ row: i + 1, phone: r.phone, reason: 'დუბლირებული ნომერი' }); continue; }
     const out = render(body, r.vars);
     if (out.missing) { skipped.push({ row: i + 1, phone: r.phone, reason: `ცვლადი ცარიელია: ${out.missing.join(', ')}` }); continue; }
