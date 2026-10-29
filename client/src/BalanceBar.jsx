@@ -30,22 +30,31 @@ export default function BalanceBar({ cabinet, onSaved }) {
   }
 
   const known = cabinet.price_per_sms > 0;
-  return (
-    <div className="balance">
-      <div className="stat"><span>ბალანსი</span><b className={cabinet.balance_gel < 0 ? 'neg' : ''}>{gel(cabinet.balance_gel)}</b></div>
-      <div className="stat"><span>დარჩენილი SMS</span><b>{known ? Math.max(cabinet.sms_left ?? 0, 0) : '—'}</b></div>
-      <div className="stat"><span>ფასი 1 SMS-ზე</span><b>{known ? gel(cabinet.price_per_sms) : 'არ არის მითითებული'}</b></div>
-      {!edit && <button onClick={open}>ბალანსის შეცვლა</button>}
-      {edit && (
+  if (edit) {
+    return (
+      <div className="panel balance">
         <div className="balance-edit">
           <label>ბალანსი (₾)<input inputMode="decimal" value={balance} onChange={(e) => setBalance(e.target.value)} /></label>
           <label>ფასი 1 SMS-ზე (₾)<input inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} /></label>
-          <button className="primary" onClick={save}>შენახვა</button>
-          <button onClick={() => setEdit(false)}>გაუქმება</button>
-          {error && <span className="alert err">{error}</span>}
-          <p className="muted">ბალანსს Beephub API არ აბრუნებს, ამიტომ აქ შეიყვანეთ ამჟამინდელი მნიშვნელობა. გაგზავნილი SMS-ების ღირებულება მას ავტომატურად გამოაკლდება.</p>
+          <div className="row">
+            <button className="primary" onClick={save}>შენახვა</button>
+            <button onClick={() => setEdit(false)}>გაუქმება</button>
+          </div>
+          {error && <div className="alert err">{error}</div>}
+          <p className="muted">ბალანსს Beephub API არ აბრუნებს, ამიტომ შეიყვანეთ ამჟამინდელი მნიშვნელობა. გაგზავნილი SMS-ების ღირებულება მას ავტომატურად გამოაკლდება.</p>
         </div>
-      )}
+      </div>
+    );
+  }
+  return (
+    <div className="panel balance">
+      <div className="lbl">დარჩენილი SMS</div>
+      <div className="big"><b>{known ? Math.max(cabinet.sms_left ?? 0, 0) : '—'}</b><span>SMS</span></div>
+      <div className="stats">
+        <div><span>ბალანსი</span><b className={cabinet.balance_gel < 0 ? 'neg' : ''}>{gel(cabinet.balance_gel)}</b></div>
+        <div><span>ფასი 1 SMS-ზე</span><b>{known ? gel(cabinet.price_per_sms) : 'არ არის მითითებული'}</b></div>
+        <div><button className="link" onClick={open}>ბალანსის შეცვლა</button></div>
+      </div>
     </div>
   );
 }
