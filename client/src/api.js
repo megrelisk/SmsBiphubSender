@@ -1,4 +1,10 @@
+import { demoRequest } from './demo.js';
+
+// VITE_DEMO=1 (ონლაინ ვერსია, სანამ ბექენდი არ გამოქვეყნებულა): მონაცემები ბრაუზერის მეხსიერებიდან
+const DEMO = import.meta.env.VITE_DEMO === '1';
+
 async function request(path, options = {}) {
+  if (DEMO) return demoRequest(path, options);
   const res = await fetch('/api' + path, options);
   if (res.status === 204) return null;
   const data = await res.json().catch(() => ({}));

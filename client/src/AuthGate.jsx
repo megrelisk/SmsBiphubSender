@@ -10,7 +10,7 @@ import { GoogleAuthProvider, getAuth, onAuthStateChanged, signInWithPopup, signO
 // Firebase ID token-ს და ამავე სიას, თორემ API-ს პირდაპირი გამოძახებით კარიბჭე გვერდს აუვლის.
 const env = import.meta.env;
 const enabled = Boolean(env.VITE_FIREBASE_API_KEY);
-const allowed = (env.VITE_ALLOWED_EMAILS || 'kartoziasoso@gmail.com')
+const allowed = (env.VITE_ALLOWED_EMAILS || 'kartoziasoso@gmail.com,megrelisk@gmail.com')
   .split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
 
 const auth = enabled

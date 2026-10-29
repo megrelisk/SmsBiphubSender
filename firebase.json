@@ -1,8 +1,9 @@
-{
+﻿{
   "hosting": {
     "site": "sms-sosokartozia",
-    "public": "client/dist",
+    "public": "client/dist-web",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{ "source": "**", "destination": "/index.html" }]
   }
 }
+

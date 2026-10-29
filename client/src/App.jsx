@@ -28,7 +28,11 @@ export default function App() {
   const [body, setBody] = useState('');
   const [numbers, setNumbers] = useState('');
 
-  const refreshCabinets = useCallback(() => api.cabinets().then(setCabinets).catch(() => {}), []);
+  const [offline, setOffline] = useState(false);
+  const refreshCabinets = useCallback(
+    () => api.cabinets().then((c) => { setCabinets(c); setOffline(false); }).catch(() => setOffline(true)),
+    [],
+  );
   useEffect(() => { api.config().then(setCfg).catch(() => {}); refreshCabinets(); }, [refreshCabinets]);
   useEffect(() => { const t = setInterval(refreshCabinets, 10000); return () => clearInterval(t); }, [refreshCabinets]);
 
@@ -57,7 +61,9 @@ export default function App() {
           </div>
           <h1>SMS გაგზავნა</h1>
         </div>
-        {cfg?.mock && <span className="badge warn">ტესტ რეჟიმი: SMS რეალურად არ იგზავნება</span>}
+        {cfg?.demo
+          ? <span className="badge warn">დემო: SMS არ იგზავნება, მონაცემები დროებითია (ბრაუზერში)</span>
+          : cfg?.mock && <span className="badge warn">ტესტ რეჟიმი: SMS რეალურად არ იგზავნება</span>}
         {cfg && !cfg.mock && !cfg.hasApiKey && <span className="badge err">BEEPHUB_API_KEY არ არის მითითებული</span>}
       </header>
 
@@ -87,7 +93,19 @@ export default function App() {
             numbers={numbers} setNumbers={setNumbers}
             onCreated={showCampaign} onSent={refreshCabinets}
           />
-        ) : <section className="panel compose"><p className="muted">იტვირთება...</p></section>}
+        ) : (
+          <section className="panel compose">
+            {offline ? (
+              <>
+                <h3>სერვერი მიუწვდომელია</h3>
+                <p className="muted">
+                  შესვლა წარმატებულია, მაგრამ SMS სერვისის სერვერი (ბაზა და გაგზავნა) ჯერ ინტერნეტში არ არის გამოქვეყნებული,
+                  ამიტომ აქ მონაცემები ვერ იტვირთება. სერვისი ამჟამად მუშაობს მხოლოდ კომპიუტერზე: <b>http://localhost:3001</b>.
+                </p>
+              </>
+            ) : <p className="muted">იტვირთება...</p>}
+          </section>
+        )}
 
         <section className="panel side-right">
           <div className="tabs" role="tablist">
