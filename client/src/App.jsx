@@ -71,16 +71,17 @@ export default function App() {
         <aside className="col">
           <div className="panel cabs" role="group" aria-label="გამგზავნი კაბინეტი">
             <div className="lbl">გამგზავნი კაბინეტი</div>
-            {cabinets.map((c) => {
-              const on = c.id === cabinet?.id;
-              return (
-                <div key={c.id} data-cabinet={c.id} className={`cab ${on ? 'on' : ''}`}>
-                  <div className="cab-mark" aria-hidden="true">{c.name.slice(0, 1)}</div>
-                  <div className="cab-name"><b>{c.name}</b><small>{c.sender}</small></div>
-                  <button className="sw" role="switch" aria-checked={on} aria-label={c.name} onClick={() => !on && pick(c.id)}><i /></button>
-                </div>
-              );
-            })}
+            <div className="cab-grid">
+              {cabinets.map((c) => {
+                const on = c.id === cabinet?.id;
+                return (
+                  <button key={c.id} data-cabinet={c.id} className={`cab-btn ${on ? 'on' : ''}`} aria-pressed={on} onClick={() => !on && pick(c.id)}>
+                    <span className="cab-mark" aria-hidden="true">{c.name.slice(0, 1)}</span>
+                    <span className="cab-name"><b>{c.name}</b><small>{c.sender}</small></span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
           {cabinet && <BalanceBar cabinet={cabinet} onSaved={refreshCabinets} />}
           {cabinet && <SideCards cabinet={cabinet} onOpenCampaign={showCampaign} onRetry={appendNumbers} />}

@@ -41,7 +41,7 @@ server.tool(
 server.tool(
   'list_templates',
   'აბრუნებს მოცემული კაბინეტის SMS შაბლონებს (სახელი, ტექსტი და {{ცვლადები}}).',
-  { cabinet: z.string().describe("კაბინეტის id: 'kea' ან 'mindup'") },
+  { cabinet: z.string().describe("კაბინეტის id: 'kea', 'mindup', 'movesummit' ან 'trainup'") },
   guard(async ({ cabinet }) => text(await api(`/templates?cabinet=${encodeURIComponent(cabinet)}`))),
 );
 
@@ -54,7 +54,7 @@ server.tool(
     'მისი პირდაპირი დასტურის შემდეგ გამოიყენეთ. კაბინეტი თუ მომხმარებელმა არ დაასახელა, ჰკითხეთ.',
   ].join(' '),
   {
-    cabinet: z.string().describe("კაბინეტის id: 'kea' (KEA Academy) ან 'mindup' (Mind up)"),
+    cabinet: z.string().describe("კაბინეტის id: 'kea' (Kea academy), 'mindup' (Mind up), 'movesummit' (Move Summit) ან 'trainup' (Trainup.ge)"),
     recipients: z
       .array(z.object({
         phone: z.string().describe('ნომერი, მაგ. 555123456 ან 995555123456'),
@@ -104,7 +104,7 @@ server.tool(
   'აჩვენებს გაგზავნის სტატუსს: campaign_id-ით კონკრეტული გაგზავნის შედეგებს, ან ბოლო მესიჯებს კაბინეტის მიხედვით.',
   {
     campaign_id: z.number().int().optional(),
-    cabinet: z.string().optional().describe("'kea' ან 'mindup' (campaign_id-ის გარეშე)"),
+    cabinet: z.string().optional().describe("'kea', 'mindup', 'movesummit' ან 'trainup' (campaign_id-ის გარეშე)"),
     limit: z.number().int().min(1).max(100).default(20),
   },
   guard(async ({ campaign_id, cabinet, limit }) => {

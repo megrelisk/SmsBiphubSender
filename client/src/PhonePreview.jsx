@@ -7,10 +7,26 @@ const initials = (s) => s.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toU
 
 const gel = (n) => `${(Math.round(n * 100) / 100).toFixed(2)} ₾`;
 
+// ვიწრო ეკრანზე (მობილური) დადასტურება ქვემოთაა: ტელეფონი ზემოთ ეტევა, ქვედა პანელი ყოველთვის ხელმისაწვდომია
+const COMPACT_W = 900;
+const BAR_H = 190; // ქვედა პანელისთვის დარეზერვებული სიმაღლე
+const fitScale = () => {
+  const compact = window.innerWidth <= COMPACT_W;
+  const availH = compact ? window.innerHeight - BAR_H : window.innerHeight - 72;
+  const availW = compact ? window.innerWidth - 24 : Infinity;
+  return Math.max(0.3, Math.min(1, availH / H, availW / W));
+};
+
 export default function PhonePreview({ name, sender, text, time, later, whenLabel, estimate, skipped, busy, onConfirm, onBack }) {
-  const [scale, setScale] = useState(() => Math.min(1, (window.innerHeight - 72) / H));
+  const [scale, setScale] = useState(fitScale);
+  // დადასტურების დროს ფონის გვერდი არ უნდა სქროლდებოდეს
   useEffect(() => {
-    const fit = () => setScale(Math.min(1, (window.innerHeight - 72) / H));
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = prev; };
+  }, []);
+  useEffect(() => {
+    const fit = () => setScale(fitScale());
     const esc = (e) => e.key === 'Escape' && !busy && onBack();
     window.addEventListener('resize', fit);
     window.addEventListener('keydown', esc);
@@ -19,6 +35,7 @@ export default function PhonePreview({ name, sender, text, time, later, whenLabe
 
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label="გაგზავნის დადასტურება">
+      <div className="phone-stage">
       <div className="phone-wrap" style={{ width: W * scale, height: H * scale }}>
         <div className="phone" style={{ transform: `scale(${scale})` }}>
           <div className="screen">
@@ -55,9 +72,15 @@ export default function PhonePreview({ name, sender, text, time, later, whenLabe
           </div>
         </div>
       </div>
+      </div>
       <div className="confirm">
         <h2>{later ? 'დაგეგმვის დადასტურება' : 'გაგზავნის დადასტურება'}</h2>
         <p className="muted">ასე გამოჩნდება SMS ადრესატთან. გადაამოწმე და დაადასტურე.</p>
+        <p className="csum">
+          <b>{name}</b> · {sender} · {estimate.messages} მიმღები · {estimate.sms} SMS
+          {estimate.price_known && ` · ${gel(estimate.cost_gel)}`}
+          {later && ` · ${whenLabel}`}
+        </p>
         <dl>
           <div><dt>პროფილი</dt><dd>{name}</dd></div>
           <div><dt>Sender ID</dt><dd>{sender}</dd></div>

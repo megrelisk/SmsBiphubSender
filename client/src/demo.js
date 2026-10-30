@@ -18,7 +18,8 @@ const db = {
   cabinets: [
     { id: 'kea', name: 'Kea academy', sender: 'KEA Academy', balance_gel: 25, price_per_sms: 0.06 },
     { id: 'mindup', name: 'Mind up', sender: 'Mind up', balance_gel: 12.4, price_per_sms: 0.06 },
-    { id: 'trainers', name: 'Trainers', sender: 'Trainers', balance_gel: 0, price_per_sms: 0 },
+    { id: 'movesummit', name: 'Move Summit', sender: 'Move Summit', balance_gel: 8.5, price_per_sms: 0.06 },
+    { id: 'trainup', name: 'Trainup.ge', sender: 'Trainup.ge', balance_gel: 0, price_per_sms: 0 },
   ],
   folders: [{ cabinet: 'kea', name: 'დასტურის სმს' }],
   templates: [

@@ -66,12 +66,13 @@ INSERT INTO cabinets (id, name, sender, sort_order) VALUES
   ('mindup', 'Mind up',     'Mind up',     2)
 ON CONFLICT (id) DO NOTHING;
 
--- ჩვენებადი სახელები (Sender ID არ იცვლება)
+-- კაბინეტები (ჩვენებადი სახელი და თანმიმდევრობა ახლდება; Sender ID არსებულ ჩანაწერზე არ იცვლება)
 INSERT INTO cabinets (id, name, sender, sort_order) VALUES
-  ('kea',      'Kea academy', 'KEA Academy', 1),
-  ('mindup',   'Mind up',     'Mind up',     2),
-  ('trainers', 'Trainers',    'Trainers',    3)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
+  ('kea',        'Kea academy', 'KEA Academy', 1),
+  ('mindup',     'Mind up',     'Mind up',     2),
+  ('movesummit', 'Move Summit', 'Move Summit', 3),
+  ('trainup',    'Trainup.ge',  'Trainup.ge',  4)
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, sort_order = EXCLUDED.sort_order;
 
 ALTER TABLE templates ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
 ALTER TABLE templates DROP CONSTRAINT IF EXISTS templates_name_key;
@@ -81,6 +82,11 @@ CREATE UNIQUE INDEX IF NOT EXISTS templates_cabinet_folder_name_idx ON templates
 
 ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS cabinet TEXT NOT NULL DEFAULT 'kea';
 ALTER TABLE messages  ADD COLUMN IF NOT EXISTS fragments INT NOT NULL DEFAULT 1;
+
+-- ძველი კაბინეტი „Trainers“ შეიცვალა „Trainup.ge“-ით: მონაცემები გადადის და ძველი ჩანაწერი იშლება
+UPDATE templates SET cabinet='trainup' WHERE cabinet='trainers';
+UPDATE campaigns SET cabinet='trainup' WHERE cabinet='trainers';
+DELETE FROM cabinets WHERE id='trainers';
 
 -- შავი სია: ამ ნომრებზე არასდროს იგზავნება (ყველა კაბინეტისთვის)
 CREATE TABLE IF NOT EXISTS blocked_numbers (
@@ -95,3 +101,5 @@ CREATE TABLE IF NOT EXISTS template_folders (
   name    TEXT NOT NULL,
   PRIMARY KEY (cabinet, name)
 );
+
+UPDATE template_folders SET cabinet='trainup' WHERE cabinet='trainers';
